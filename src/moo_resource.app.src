@@ -1,0 +1,12 @@
+{application, moo_resource, [
+	{description, "Utility modules for writing moo_rest handlers"},
+	{vsn, "0.0.1"},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib,
+		cowboy,
+		jsx
+	]},
+	{env, []}
+]}.
