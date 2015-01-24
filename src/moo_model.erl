@@ -6,7 +6,7 @@
 -type content_type() :: {binary(), binary(), '*' | [{binary(), binary()}]}.
 -type parsing_result(T) :: {ok, T, cowboy_req:req()}
                          | {error, Reason :: term(), cowboy_req:req()}.
--type attributes() :: [atom() | binary()].
+-type attributes() :: [atom() | binary()] | '*'.
 
 -callback parse_attribute(Name, Value, State) -> {ok, State} | {error, Reason} when
 	  Name :: binary(),
@@ -73,17 +73,21 @@ parse_proplist1([{K, V}|Rest], Module, State, Attributes) ->
 parse_attribute(K, V, Module, State, Attributes) when is_atom(K) ->
 	parse_attribute(atom_to_binary(K, latin1), V, Module, State, Attributes);
 parse_attribute(K, V, Module, State, Attributes) ->
-	case lists:member(K, Attributes) of
+	case attribute_allowed(K, Attributes) of
 		true -> Module:parse_attribute(K, V, State);
-		false -> {error, forbidden_attribute}
+		false -> {ok, State}
 	end.
 
+normalize_attributes('*') -> '*';
 normalize_attributes(Attributes) ->
 	lists:map(
 	  fun(Attr) when is_atom(Attr)   -> atom_to_binary(Attr, latin1);
 	     (Attr) when is_binary(Attr) -> Attr end,
 	  Attributes
 	).
+
+attribute_allowed(_, '*') -> true;
+attribute_allowed(Attr, Attributes) -> lists:member(Attr, Attributes).
 
 return(Req, {ok, Result}) -> {ok, Result, Req};
 return(Req, {error, Reason}) -> {error, Reason, Req}.
